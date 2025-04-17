@@ -273,7 +273,7 @@
         const newDate = e.target.value;
         setSurgeryDate(newDate);
         setTimeout(() => {
-          updateFirebase();
+          database.ref('calendar').update({ surgeryDate: newDate });
         }, 100);
       };
 
@@ -282,7 +282,7 @@
         const days = parseInt(e.target.value);
         setRecoveryDays(days);
         setTimeout(() => {
-          updateFirebase();
+          database.ref('calendar').update({ recoveryDays: days });
         }, 100);
       };
 
