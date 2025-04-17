@@ -8,13 +8,13 @@ const RecoveryCalendar = () => {
   
   const [recoveryDays, setRecoveryDays] = useState(14);
   const [milestones, setMilestones] = useState([
-    { day: 1, title: "手術當天", description: "保持休息、冰敷每30分鐘" },
-    { day: 2, title: "術後第2天", description: "腫脹開始消退、繼續冰敷" },
-    { day: 3, title: "術後第3天", description: "可以開始少量說話、疼痛減輕" },
-    { day: 5, title: "術後第5天", description: "可以開始吃軟食、腫脹明顯消退" },
-    { day: 7, title: "術後第7天", description: "回診檢查、可能拆線" },
-    { day: 10, title: "術後第10天", description: "大部分腫脹消失、可逐漸恢復正常飲食" },
-    { day: 14, title: "術後第14天", description: "基本恢復、可恢復輕度活動" }
+    { day: 1, title: "手術當天", description: "" },
+    { day: 2, title: "術後第2天", description: "" },
+    { day: 3, title: "術後第3天", description: "" },
+    { day: 5, title: "術後第5天", description: "" },
+    { day: 7, title: "術後第7天", description: "" },
+    { day: 10, title: "術後第10天", description: "" },
+    { day: 14, title: "術後第14天", description: "" }
   ]);
   
   const [customMilestone, setCustomMilestone] = useState({ day: "", title: "", description: "" });
