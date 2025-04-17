@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>璇璇的恢復小遊戲</title>
+  <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 16px;
+    }
+    
+    #root {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .games-container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #E91E63;
+      margin-top: 0;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+      padding: 16px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+    
+    button {
+      width: 100%;
+      background-color: #1877f2;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #166fe5;
+    }
+    
+    .game-btn {
+      background-color: #1877f2;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .game-btn:hover {
+      background-color: #166fe5;
+    }
+    
+    .home-btn {
+      background-color: #4CAF50;
+      margin-top: 20px;
+    }
+    
+    .home-btn:hover {
+      background-color: #43A047;
+    }
+    
+    .memory-card {
+      width: 80px;
+      height: 80px;
+      background-color: #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: transparent;
+      user-select: none;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+    
+    .memory-card:hover {
+      background-color: #ccc;
+    }
+    
+    .memory-card.flipped {
+      background-color: #bbdefb;
+      transform: rotateY(180deg);
+      color: #1877f2;
+    }
+    
+    .memory-card.matched {
+      background-color: #c8e6c9;
+      color: #43a047;
+      cursor: default;
+    }
+    
+    .guess-feedback.correct {
+      color: #43a047;
+      font-weight: bold;
+    }
+    
+    .guess-feedback.too-high {
+      color: #f44336;
+    }
+    
+    .guess-feedback.too-low {
+      color: #ff9800;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // 記憶配對遊戲組件
+    const MemoryGame = () => {
+      const [moves, setMoves] = useState(0);
+      const [matches, setMatches] = useState(0);
+      const [flippedCards, setFlippedCards] = useState([]);
+      const [matchedCards, setMatchedCards] = useState([]);
+      const [cards, setCards] = useState([]);
+      const lockBoardRef = useRef(false);
+      
+      // 表情符號
+      const emojis = ['😊', '🌟', '🎉', '🍎', '🐱', '🌈'];
+      
+      // 初始化卡片
+      useEffect(() => {
+        initGame();
+      }, []);
+      
+      const initGame = () => {
+        const cardIds = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6];
+        // 洗牌
+        for (let i = cardIds.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cardIds[i], cardIds[j]] = [cardIds[j], cardIds[i]];
+        }
+        
+        const newCards = cardIds.map((id, index) => ({
+          id,
+          index,
+          emoji: emojis[id - 1],
+          isFlipped: false,
+          isMatched: false
+        }));
+        
+        setCards(newCards);
+        setMoves(0);
+        setMatches(0);
+        setFlippedCards([]);
+        setMatchedCards([]);
+      };
+      
+      const handleCardClick = (index) => {
+        if (lockBoardRef.current) return;
+        if (flippedCards.length === 2) return;
+        if (cards[index].isFlipped || cards[index].isMatched) return;
+        
+        // 翻牌
+        const newCards = [...cards];
+        newCards[index].isFlipped = true;
+        setCards(newCards);
+        
+        // 添加到已翻牌數組
+        const newFlippedCards = [...flippedCards, index];
+        setFlippedCards(newFlippedCards);
+        
+        // 檢查是否有兩張牌
+        if (newFlippedCards.length === 2) {
+          setMoves(prev => prev + 1);
+          
+          // 檢查是否配對
+          const firstCardId = cards[newFlippedCards[0]].id;
+          const secondCardId = cards[newFlippedCards[1]].id;
+          
+          if (firstCardId === secondCardId) {
+            // 配對成功
+            const newMatchedCards = [...matchedCards, ...newFlippedCards];
+            setMatchedCards(newMatchedCards);
+            setFlippedCards([]);
+            
+            // 更新卡片狀態
+            const updatedCards = [...newCards];
+            newFlippedCards.forEach(cardIndex => {
+              updatedCards[cardIndex].isMatched = true;
+            });
+            setCards(updatedCards);
+            
+            // 增加配對計數
+            const newMatches = matches + 1;
+            setMatches(newMatches);
+            
+            if (newMatches === 6) {
+              setTimeout(() => {
+                alert(`恭喜您完成了記憶配對遊戲！總共翻牌 ${moves + 1} 次。`);
+              }, 500);
+            }
+          } else {
+            // 配對失敗
+            lockBoardRef.current = true;
+            setTimeout(() => {
+              const updatedCards = [...newCards];
+              newFlippedCards.forEach(cardIndex => {
+                updatedCards[cardIndex].isFlipped = false;
+              });
+              setCards(updatedCards);
+              setFlippedCards([]);
+              lockBoardRef.current = false;
+            }, 1000);
+          }
+        }
+      };
+      
+      return (
+        <div>
+          <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', marginBottom: '15px'}}>
+            {cards.map((card, index) => (
+              <div 
+                key={index}
+                className={`memory-card ${card.isFlipped ? 'flipped' : ''} ${card.isMatched ? 'matched' : ''}`}
+                onClick={() => handleCardClick(index)}
+                style={{color: (card.isFlipped || card.isMatched) ? 'inherit' : 'transparent'}}
+              >
+                {card.emoji}
+              </div>
+            ))}
+          </div>
+          <p style={{textAlign: 'center', fontWeight: 'bold'}}>已翻牌次數: {moves}</p>
+          <button onClick={initGame}>重新開始</button>
+        </div>
+      );
+    };
+
+    // 猜數字遊戲組件
+    const GuessGame = () => {
+      const [targetNumber, setTargetNumber] = useState(0);
+      const [attempts, setAttempts] = useState(0);
+      const [guess, setGuess] = useState('');
+      const [feedback, setFeedback] = useState('');
+      const [feedbackClass, setFeedbackClass] = useState('');
+      const [gameOver, setGameOver] = useState(false);
+      
+      // 初始化遊戲
+      useEffect(() => {
+        resetGame();
+      }, []);
+      
+      const resetGame = () => {
+        setTargetNumber(Math.floor(Math.random() * 100) + 1);
+        setAttempts(0);
+        setGuess('');
+        setFeedback('');
+        setFeedbackClass('');
+        setGameOver(false);
+      };
+      
+      const handleGuess = () => {
+        const userGuess = parseInt(guess);
+        
+        if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+          setFeedback('請輸入1到100之間的數字！');
+          return;
+        }
+        
+        setAttempts(attempts + 1);
+        
+        if (userGuess === targetNumber) {
+          setFeedback(`恭喜！你猜對了，答案就是 ${targetNumber}！`);
+          setFeedbackClass('correct');
+          setGameOver(true);
+        } else if (userGuess > targetNumber) {
+          setFeedback('太高了，再試一次！');
+          setFeedbackClass('too-high');
+        } else {
+          setFeedback('太低了，再試一次！');
+          setFeedbackClass('too-low');
+        }
+        
+        setGuess('');
+      };
+      
+      return (
+        <div>
+          <p style={{textAlign: 'center', marginBottom: '15px'}}>我已經想好了一個1到100之間的數字，猜猜看是多少？</p>
+          <div style={{display: 'flex', marginBottom: '15px'}}>
+            <input 
+              type="number" 
+              value={guess} 
+              onChange={(e) => setGuess(e.target.value)}
+              disabled={gameOver}
+              style={{flexGrow: 1, marginRight: '10px', padding: '8px'}}
+              placeholder="輸入1-100的數字"
+              min="1"
+              max="100"
+              onKeyPress={(e) => {if (e.key === 'Enter') handleGuess()}}
+            />
+            <button 
+              onClick={handleGuess} 
+              disabled={gameOver}
+              style={{width: '80px'}}
+            >
+              猜!
+            </button>
+          </div>
+          <p className={`guess-feedback ${feedbackClass}`} style={{textAlign: 'center', marginBottom: '15px', minHeight: '24px'}}>
+            {feedback}
+          </p>
+          <p style={{textAlign: 'center', fontWeight: 'bold'}}>已猜次數: {attempts}</p>
+          <button onClick={resetGame}>重新開始</button>
+        </div>
+      );
+    };
+
+    // 主遊戲頁面組件
+    const GamesPage = () => {
+      const [activeGame, setActiveGame] = useState(null);
+      
+      return (
+        <div className="games-container">
+          <h1>璇璇的恢復小遊戲</h1>
+          
+          <div className="section">
+            <p style={{textAlign: 'center', fontSize: '16px', marginBottom: '20px'}}>
+              挑選一個遊戲來放鬆心情，加油！恢復期間也要保持心情愉快喔～
+            </p>
+            
+            <div style={{marginBottom: '20px'}}>
+              <button 
+                className="game-btn" 
+                onClick={() => setActiveGame('memory')}
+                style={{width: '48%', marginRight: '4%'}}
+              >
+                記憶配對
+              </button>
+              <button 
+                className="game-btn" 
+                onClick={() => setActiveGame('guess')}
+                style={{width: '48%'}}
+              >
+                猜數字
+              </button>
+            </div>
+            
+            {activeGame && (
+              <div style={{marginTop: '15px'}}>
+                {activeGame === 'memory' ? <MemoryGame /> : <GuessGame />}
+              </div>
+            )}
+          </div>
+          
+          <button 
+            className="home-btn" 
+            onClick={() => window.location.href = 'index.html'}
+          >
+            返回恢復日曆
+          </button>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<GamesPage />, document.getElementById('root'));
+  </script>
+</body>
+</html>
