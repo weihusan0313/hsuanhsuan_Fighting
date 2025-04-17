@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>璇璇最可愛</title>
+  <title>璇璇的恢復小遊戲</title>
   <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -90,9 +90,8 @@
       align-items: center;
       font-size: 24px;
       font-weight: bold;
-      color: transparent;
+      transition: background-color 0.3s;
       user-select: none;
-      transition: background-color 0.3s, transform 0.3s;
     }
     
     .memory-card:hover {
@@ -101,13 +100,10 @@
     
     .memory-card.flipped {
       background-color: #bbdefb;
-      transform: rotateY(180deg);
-      color: #1877f2;
     }
     
     .memory-card.matched {
       background-color: #c8e6c9;
-      color: #43a047;
       cursor: default;
     }
     
@@ -163,8 +159,8 @@
       const [isNewRecord, setIsNewRecord] = useState(false);
       const lockBoardRef = useRef(false);
       
-      // 表情符號
-      const emojis = ['😊', '🌟', '🎉', '🍎', '🐱', '🌈'];
+      // iOS通用圖示
+      const cardSymbols = ['🍎', '🌟', '🎵', '🚗', '🏠', '📱'];
       
       // 加載最佳紀錄
       useEffect(() => {
@@ -190,7 +186,7 @@
         const newCards = cardIds.map((id, index) => ({
           id,
           index,
-          emoji: emojis[id - 1],
+          symbol: cardSymbols[id - 1],
           isFlipped: false,
           isMatched: false
         }));
@@ -283,9 +279,8 @@
                 key={index}
                 className={`memory-card ${card.isFlipped ? 'flipped' : ''} ${card.isMatched ? 'matched' : ''}`}
                 onClick={() => handleCardClick(index)}
-                style={{color: (card.isFlipped || card.isMatched) ? 'inherit' : 'transparent'}}
               >
-                {card.emoji}
+                {card.isFlipped || card.isMatched ? card.symbol : '?'}
               </div>
             ))}
           </div>
@@ -417,7 +412,7 @@
       
       return (
         <div className="games-container">
-          <h1>佩佩豬奇幻冒險</h1>
+          <h1>璇璇的恢復小遊戲</h1>
           
           <div className="section">
             <p style={{textAlign: 'center', fontSize: '16px', marginBottom: '20px'}}>
