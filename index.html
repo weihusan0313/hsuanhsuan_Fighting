@@ -514,4 +514,328 @@
             </button>
             <button 
               className="game-btn" 
-              onClick={() => setActiveGame('gues
+              onClick={() => setActiveGame('guess')}
+              style={{width: '48%'}}
+            >
+              猜數字
+            </button>
+          </div>
+          
+          {activeGame && (
+            <div style={{marginTop: '15px'}}>
+              {activeGame === 'memory' ? <MemoryGame /> : <GuessGame />}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // 恢復日曆組件
+    const RecoveryCalendarContent = ({ surgeryDate, recoveryDays, milestones, currentDay, handleSurgeryDateChange, handleRecoveryDaysChange, customMilestone, setCustomMilestone, handleAddMilestone, handleDeleteMilestone, getRandomMessage }) => {
+      const recoveryPercentage = Math.min(100, Math.round((currentDay / recoveryDays) * 100));
+      
+      return (
+        <>
+          <div className="section">
+            <div className="form-control">
+              <label>手術日期：</label>
+              <input 
+                type="date" 
+                value={surgeryDate} 
+                onChange={handleSurgeryDateChange}
+              />
+            </div>
+            
+            <div className="form-control">
+              <label>預計恢復天數：</label>
+              <input 
+                type="number" 
+                value={recoveryDays} 
+                onChange={handleRecoveryDaysChange}
+                min="1"
+              />
+            </div>
+          </div>
+          
+          <div className="section">
+            <h2>恢復進度</h2>
+            
+            <div style={{textAlign: 'center', marginBottom: '10px'}}>
+              <span style={{fontSize: '24px', fontWeight: 'bold', color: '#1877f2'}}>{currentDay}</span>
+              <span style={{marginLeft: '5px'}}>/ {recoveryDays} 天</span>
+            </div>
+            
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar"
+                style={{ width: `${recoveryPercentage}%` }}
+              ></div>
+            </div>
+            
+            <p style={{textAlign: 'center'}}>
+              已完成 {recoveryPercentage}% 的恢復歷程
+            </p>
+            
+            <div className="message-box">
+              {getRandomMessage()}
+            </div>
+          </div>
+          
+          <div className="section">
+            <h2>恢復里程碑</h2>
+            
+            {milestones
+              .sort((a, b) => a.day - b.day)
+              .map((milestone, index) => {
+                const isCompleted = currentDay >= milestone.day;
+                const milestoneClass = milestone.isDefault ? 
+                  (isCompleted ? 'milestone completed' : 'milestone pending') : 
+                  (isCompleted ? 'milestone custom-milestone completed' : 'milestone custom-milestone');
+                
+                return (
+                  <div key={index} className={milestoneClass}>
+                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                      <span style={{fontWeight: 'bold'}}>第 {milestone.day} 天</span>
+                    </div>
+                    <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
+                    <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
+                    
+                    <button 
+                      className="delete-btn" 
+                      onClick={() => handleDeleteMilestone(index)}
+                      title="刪除此里程碑"
+                    >
+                      ×
+                    </button>
+                    {isCompleted && (
+                      <span className="completed-mark">✓ 已達成</span>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+          
+          <div className="section">
+            <h2>添加個人里程碑</h2>
+            
+            <div className="form-control">
+              <label>第幾天：</label>
+              <input 
+                type="number" 
+                value={customMilestone.day} 
+                onChange={(e) => setCustomMilestone({...customMilestone, day: e.target.value})}
+                min="1"
+              />
+            </div>
+            
+            <div className="form-control">
+              <label>標題：</label>
+              <input 
+                type="text" 
+                value={customMilestone.title} 
+                onChange={(e) => setCustomMilestone({...customMilestone, title: e.target.value})}
+                placeholder="例如：回診"
+              />
+            </div>
+            
+            <div className="form-control">
+              <label>描述：</label>
+              <input 
+                type="text" 
+                value={customMilestone.description} 
+                onChange={(e) => setCustomMilestone({...customMilestone, description: e.target.value})}
+                placeholder="例如：檢查傷口恢復情況"
+              />
+            </div>
+            
+            <button onClick={handleAddMilestone}>
+              添加里程碑
+            </button>
+          </div>
+        </>
+      );
+    };
+
+    const RecoveryCalendar = () => {
+      const [surgeryDate, setSurgeryDate] = useState(new Date().toISOString().split('T')[0]);
+      const [recoveryDays, setRecoveryDays] = useState(14);
+      const [loading, setLoading] = useState(true);
+      const [isGameMode, setIsGameMode] = useState(false);
+
+      const defaultMilestones = [
+        { day: 1, title: "手術第1天", description: "頭暈、沒食慾、不能下床", isDefault: true },
+        { day: 2, title: "術後第2天", description: "腫脹不舒服、持續冰敷", isDefault: true },
+        { day: 3, title: "術後第3天", description: "稍微消腫", isDefault: true },
+        { day: 7, title: "術後第7天", description: "基本恢復", isDefault: true },
+        { day: 14, title: "術後第14天", description: "差不多快好囉!!!", isDefault: true }
+      ];
+      
+      const [milestones, setMilestones] = useState(defaultMilestones);
+      const [customMilestone, setCustomMilestone] = useState({ day: "", title: "", description: "" });
+      const [currentDay, setCurrentDay] = useState(0);
+      const [messages, setMessages] = useState([
+        "璇璇寶貝加油~",
+        "不開心的話就打給我吧!",
+        "放心沒事，我都在!",
+        "我會一直陪著你的!",
+        "辛苦了，你是最棒的!",
+        "今天會比昨天好一點！",
+        "堅持住，你做得很棒！",
+        "恢復是一個過程，慢慢來~Relax~",
+        "每一天都是勝利!",
+        "一小步一小步，終點就在不遠處!"
+      ]);
+
+      // 從Firebase讀取數據
+      useEffect(() => {
+        const calendarRef = database.ref('calendar');
+        
+        calendarRef.on('value', (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            setSurgeryDate(data.surgeryDate || new Date().toISOString().split('T')[0]);
+            setRecoveryDays(data.recoveryDays || 14);
+            setMilestones(data.milestones || defaultMilestones);
+          } else {
+            // 如果尚未有數據，初始化數據
+            calendarRef.set({
+              surgeryDate: new Date().toISOString().split('T')[0],
+              recoveryDays: 14,
+              milestones: defaultMilestones
+            });
+          }
+          setLoading(false);
+        });
+        
+        return () => {
+          calendarRef.off(); // 組件卸載時取消訂閱
+        };
+      }, []);
+
+      // 更新Firebase數據
+      const updateFirebase = () => {
+        database.ref('calendar').set({
+          surgeryDate,
+          recoveryDays,
+          milestones
+        });
+      };
+
+      // 處理手術日期變更
+      const handleSurgeryDateChange = (e) => {
+        const newDate = e.target.value;
+        setSurgeryDate(newDate);
+        setTimeout(() => {
+          updateFirebase();
+        }, 100);
+      };
+
+      // 處理恢復天數變更
+      const handleRecoveryDaysChange = (e) => {
+        const days = parseInt(e.target.value);
+        setRecoveryDays(days);
+        setTimeout(() => {
+          updateFirebase();
+        }, 100);
+      };
+
+      // 添加里程碑
+      const handleAddMilestone = () => {
+        if (customMilestone.day && customMilestone.title) {
+          const newMilestones = [...milestones, { 
+            day: parseInt(customMilestone.day), 
+            title: customMilestone.title, 
+            description: customMilestone.description,
+            isDefault: false
+          }];
+          setMilestones(newMilestones);
+          setCustomMilestone({ day: "", title: "", description: "" });
+          setTimeout(() => {
+            database.ref('calendar/milestones').set(newMilestones);
+          }, 100);
+        }
+      };
+
+      // 刪除里程碑
+      const handleDeleteMilestone = (index) => {
+        const updatedMilestones = [...milestones];
+        updatedMilestones.splice(index, 1);
+        setMilestones(updatedMilestones);
+        setTimeout(() => {
+          database.ref('calendar/milestones').set(updatedMilestones);
+        }, 100);
+      };
+
+      // 計算當前天數
+      useEffect(() => {
+        const calculateCurrentDay = () => {
+          const surgery = new Date(surgeryDate);
+          const today = new Date();
+          const diffTime = Math.abs(today - surgery);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          setCurrentDay(diffDays);
+        };
+        
+        calculateCurrentDay();
+        const timer = setInterval(calculateCurrentDay, 1000 * 60 * 60);
+        
+        return () => clearInterval(timer);
+      }, [surgeryDate]);
+
+      const getRandomMessage = () => {
+        const randomIndex = Math.floor(Math.random() * messages.length);
+        return messages[randomIndex];
+      };
+
+      // 切換模式
+      const toggleMode = () => {
+        setIsGameMode(!isGameMode);
+      };
+
+      if (loading) {
+        return (
+          <div className="loading">
+            <div className="spinner"></div>
+            <span>數據加載中...</span>
+          </div>
+        );
+      }
+
+      return (
+        <div className="calendar-container">
+          <h1>璇璇的手術恢復日記</h1>
+          
+          {isGameMode ? (
+            <GameSection />
+          ) : (
+            <RecoveryCalendarContent 
+              surgeryDate={surgeryDate}
+              recoveryDays={recoveryDays}
+              milestones={milestones}
+              currentDay={currentDay}
+              handleSurgeryDateChange={handleSurgeryDateChange}
+              handleRecoveryDaysChange={handleRecoveryDaysChange}
+              customMilestone={customMilestone}
+              setCustomMilestone={setCustomMilestone}
+              handleAddMilestone={handleAddMilestone}
+              handleDeleteMilestone={handleDeleteMilestone}
+              getRandomMessage={getRandomMessage}
+            />
+          )}
+          
+          {/* 模式切換按鈕 */}
+          <button 
+            className="mode-button" 
+            onClick={toggleMode} 
+            title={isGameMode ? "切換到恢復日曆" : "切換到小遊戲"}
+          >
+            {isGameMode ? "📅" : "🎮"}
+          </button>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<RecoveryCalendar />, document.getElementById('root'));
+  </script>
+</body>
+</html>
