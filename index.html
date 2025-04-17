@@ -316,15 +316,13 @@
                     <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
                     <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
                     
-                    {!milestone.isDefault && (
-                      <button 
-                        className="delete-btn" 
-                        onClick={() => handleDeleteMilestone(index)}
-                        title="刪除此里程碑"
-                      >
-                        ×
-                      </button>
-                    )}
+                  <button 
+                    className="delete-btn" 
+                    onClick={() => handleDeleteMilestone(index)}
+                    title="刪除此里程碑"
+                  >
+                    ×
+                  </button>
                   </div>
                 );
               })}
