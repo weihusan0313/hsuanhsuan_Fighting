@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>手術恢復倒數日曆</title>
+  <title>璇璇的手術恢復日記</title>
   <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -58,6 +58,7 @@
       padding: 12px;
       margin: 8px 0;
       border-radius: 6px;
+      position: relative;
     }
     
     .milestone.completed {
@@ -67,6 +68,32 @@
     
     .milestone.pending {
       background-color: #f0f2f5;
+    }
+    
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #ff4d4f;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      padding: 0;
+    }
+    
+    .delete-btn:hover {
+      opacity: 1;
+      background-color: #ff7875;
     }
     
     .form-control {
@@ -111,6 +138,16 @@
       font-style: italic;
       color: #1877f2;
     }
+
+    .custom-milestone {
+      background-color: #fff3e0;
+      border-left: 4px solid #ffab40;
+    }
+
+    .custom-milestone.completed {
+      background-color: #e6f7e6;
+      border-left: 4px solid #42b72a;
+    }
   </style>
 </head>
 <body>
@@ -121,32 +158,52 @@
     
     const RecoveryCalendar = () => {
       const [surgeryDate, setSurgeryDate] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split('T')[0];
+        const storedDate = localStorage.getItem('surgeryDate');
+        return storedDate || new Date().toISOString().split('T')[0];
       });
       
-      const [recoveryDays, setRecoveryDays] = useState(14);
-      const [milestones, setMilestones] = useState([
-        { day: 1, title: "手術當天", description: "保持休息、冰敷每30分鐘" },
-        { day: 2, title: "術後第2天", description: "腫脹開始消退、繼續冰敷" },
-        { day: 3, title: "術後第3天", description: "可以開始少量說話、疼痛減輕" },
-        { day: 5, title: "術後第5天", description: "可以開始吃軟食、腫脹明顯消退" },
-        { day: 7, title: "術後第7天", description: "回診檢查、可能拆線" },
-        { day: 10, title: "術後第10天", description: "大部分腫脹消失、可逐漸恢復正常飲食" },
-        { day: 14, title: "術後第14天", description: "基本恢復、可恢復輕度活動" }
-      ]);
+      const [recoveryDays, setRecoveryDays] = useState(() => {
+        const storedDays = localStorage.getItem('recoveryDays');
+        return storedDays ? parseInt(storedDays) : 14;
+      });
+
+      const defaultMilestones = [
+        { day: 1, title: "手術第1天", description: "頭暈、沒食慾、不能下床", isDefault: true },
+        { day: 2, title: "術後第2天", description: "腫脹不舒服、持續冰敷", isDefault: true },
+        { day: 3, title: "術後第3天", description: "稍微消腫", isDefault: true },
+        { day: 7, title: "術後第7天", description: "基本恢復", isDefault: true },
+        { day: 14, title: "術後第14天", description: "差不多快好囉!!!", isDefault: true }
+      ];
+      
+      const [milestones, setMilestones] = useState(() => {
+        const storedMilestones = localStorage.getItem('milestones');
+        if (storedMilestones) {
+          return JSON.parse(storedMilestones);
+        }
+        return defaultMilestones;
+      });
       
       const [customMilestone, setCustomMilestone] = useState({ day: "", title: "", description: "" });
       const [currentDay, setCurrentDay] = useState(0);
       const [messages, setMessages] = useState([
+        "璇璇寶貝加油~",
+        "不開心的話就打給我吧!",
+        "放心沒事，我都在!",
+        "我會一直陪著你的",
+        "辛苦了，你是最棒的!",
         "今天會比昨天好一點！",
-        "每一天都是朝康復邁進的一步",
-        "你正在變得更強！",
         "堅持住，你做得很棒！",
-        "恢復是一個過程，慢慢來",
+        "恢復是一個過程，慢慢來~Relax~",
         "每一天都是勝利",
-        "一小步一小步，你正在進步"
+        "一小步一小步，終點就在不遠處!"
       ]);
+
+      // 保存到 localStorage
+      useEffect(() => {
+        localStorage.setItem('surgeryDate', surgeryDate);
+        localStorage.setItem('recoveryDays', recoveryDays);
+        localStorage.setItem('milestones', JSON.stringify(milestones));
+      }, [surgeryDate, recoveryDays, milestones]);
 
       useEffect(() => {
         const calculateCurrentDay = () => {
@@ -168,10 +225,17 @@
           setMilestones([...milestones, { 
             day: parseInt(customMilestone.day), 
             title: customMilestone.title, 
-            description: customMilestone.description 
+            description: customMilestone.description,
+            isDefault: false
           }]);
           setCustomMilestone({ day: "", title: "", description: "" });
         }
+      };
+
+      const handleDeleteMilestone = (index) => {
+        const updatedMilestones = [...milestones];
+        updatedMilestones.splice(index, 1);
+        setMilestones(updatedMilestones);
       };
 
       const getRandomMessage = () => {
@@ -235,22 +299,35 @@
             
             {milestones
               .sort((a, b) => a.day - b.day)
-              .map((milestone, index) => (
-                <div 
-                  key={index} 
-                  className={`milestone ${currentDay >= milestone.day ? 'completed' : 'pending'}`}
-                >
-                  <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                    <span style={{fontWeight: 'bold'}}>第 {milestone.day} 天</span>
-                    {currentDay >= milestone.day && (
-                      <span style={{color: 'green'}}>✓ 已達成</span>
+              .map((milestone, index) => {
+                const isCompleted = currentDay >= milestone.day;
+                const milestoneClass = milestone.isDefault ? 
+                  (isCompleted ? 'milestone completed' : 'milestone pending') : 
+                  (isCompleted ? 'milestone custom-milestone completed' : 'milestone custom-milestone');
+                
+                return (
+                  <div key={index} className={milestoneClass}>
+                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                      <span style={{fontWeight: 'bold'}}>第 {milestone.day} 天</span>
+                      {isCompleted && (
+                        <span style={{color: 'green'}}>✓ 已達成</span>
+                      )}
+                    </div>
+                    <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
+                    <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
+                    
+                    {!milestone.isDefault && (
+                      <button 
+                        className="delete-btn" 
+                        onClick={() => handleDeleteMilestone(index)}
+                        title="刪除此里程碑"
+                      >
+                        ×
+                      </button>
                     )}
                   </div>
-                  <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
-                  <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
-                </div>
-              ))
-            }
+                );
+              })}
           </div>
           
           <div className="section">
