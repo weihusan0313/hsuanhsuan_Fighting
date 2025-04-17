@@ -466,9 +466,323 @@
             </button>
           </div>
         </div>
+        <!-- 將這段代碼添加到你的網頁中，放在最後一個section後面 -->
+
+<div class="section">
+  <h2>小遊戲區</h2>
+  <p style="text-align: center; margin-bottom: 15px;">恢復期間無聊嗎？試試這些小遊戲吧！</p>
+  
+  <div id="game-selector" style="margin-bottom: 20px;">
+    <button id="memory-btn" class="game-btn" style="width: 48%; margin-right: 4%;">記憶配對</button>
+    <button id="guess-btn" class="game-btn" style="width: 48%;">猜數字</button>
+  </div>
+  
+  <div id="game-container" style="display: none;">
+    <!-- 記憶配對遊戲 -->
+    <div id="memory-game" style="display: none;">
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px;">
+        <div class="memory-card" data-id="1"></div>
+        <div class="memory-card" data-id="1"></div>
+        <div class="memory-card" data-id="2"></div>
+        <div class="memory-card" data-id="2"></div>
+        <div class="memory-card" data-id="3"></div>
+        <div class="memory-card" data-id="3"></div>
+        <div class="memory-card" data-id="4"></div>
+        <div class="memory-card" data-id="4"></div>
+        <div class="memory-card" data-id="5"></div>
+        <div class="memory-card" data-id="5"></div>
+        <div class="memory-card" data-id="6"></div>
+        <div class="memory-card" data-id="6"></div>
+      </div>
+      <p id="memory-score" style="text-align: center; font-weight: bold;">已翻牌次數: 0</p>
+      <button id="memory-restart" style="width: 100%;">重新開始</button>
+    </div>
+    
+    <!-- 猜數字遊戲 -->
+    <div id="guess-game" style="display: none;">
+      <p style="text-align: center; margin-bottom: 15px;">我已經想好了一個1到100之間的數字，猜猜看是多少？</p>
+      <div style="display: flex; margin-bottom: 15px;">
+        <input type="number" id="guess-input" min="1" max="100" style="flex-grow: 1; margin-right: 10px;" placeholder="輸入1-100的數字">
+        <button id="guess-submit" style="width: 80px;">猜!</button>
+      </div>
+      <p id="guess-feedback" style="text-align: center; margin-bottom: 15px; min-height: 24px;"></p>
+      <p id="guess-attempts" style="text-align: center; font-weight: bold;">已猜次數: 0</p>
+      <button id="guess-restart" style="width: 100%;">重新開始</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .game-btn {
+    background-color: #1877f2;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .game-btn:hover {
+    background-color: #166fe5;
+  }
+  
+  .memory-card {
+    width: 80px;
+    height: 80px;
+    background-color: #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: transparent;
+    user-select: none;
+    transition: background-color 0.3s, transform 0.3s;
+  }
+  
+  .memory-card:hover {
+    background-color: #ccc;
+  }
+  
+  .memory-card.flipped {
+    background-color: #bbdefb;
+    transform: rotateY(180deg);
+    color: #1877f2;
+  }
+  
+  .memory-card.matched {
+    background-color: #c8e6c9;
+    color: #43a047;
+    cursor: default;
+  }
+  
+  #guess-input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  #guess-feedback.correct {
+    color: #43a047;
+    font-weight: bold;
+  }
+  
+  #guess-feedback.too-high {
+    color: #f44336;
+  }
+  
+  #guess-feedback.too-low {
+    color: #ff9800;
+  }
+</style>
+
+<script>
+  // 記憶配對遊戲
+  function initMemoryGame() {
+    const cards = document.querySelectorAll('.memory-card');
+    const scoreElement = document.getElementById('memory-score');
+    const restartButton = document.getElementById('memory-restart');
+    let hasFlippedCard = false;
+    let lockBoard = false;
+    let firstCard, secondCard;
+    let moves = 0;
+    let matches = 0;
+    
+    // 設置卡片圖案
+    const emojis = ['😊', '🌟', '🎉', '🍎', '🐱', '🌈'];
+    cards.forEach(card => {
+      const id = card.getAttribute('data-id');
+      card.textContent = emojis[id - 1];
+    });
+    
+    // 洗牌
+    function shuffle() {
+      cards.forEach(card => {
+        let randomPos = Math.floor(Math.random() * 12);
+        card.style.order = randomPos;
+      });
+    }
+    
+    // 翻牌
+    function flipCard() {
+      if (lockBoard) return;
+      if (this === firstCard) return;
+      
+      this.classList.add('flipped');
+      
+      if (!hasFlippedCard) {
+        // 第一張牌
+        hasFlippedCard = true;
+        firstCard = this;
+        return;
+      }
+      
+      // 第二張牌
+      secondCard = this;
+      moves++;
+      scoreElement.textContent = `已翻牌次數: ${moves}`;
+      checkForMatch();
+    }
+    
+    // 檢查配對
+    function checkForMatch() {
+      let isMatch = firstCard.getAttribute('data-id') === secondCard.getAttribute('data-id');
+      isMatch ? disableCards() : unflipCards();
+    }
+    
+    // 禁用已配對的卡片
+    function disableCards() {
+      firstCard.classList.add('matched');
+      secondCard.classList.add('matched');
+      firstCard.removeEventListener('click', flipCard);
+      secondCard.removeEventListener('click', flipCard);
+      matches++;
+      
+      if (matches === 6) {
+        setTimeout(() => {
+          alert(`恭喜您完成了記憶配對遊戲！總共翻牌 ${moves} 次。`);
+        }, 500);
+      }
+      
+      resetBoard();
+    }
+    
+    // 翻回未配對的卡片
+    function unflipCards() {
+      lockBoard = true;
+      
+      setTimeout(() => {
+        firstCard.classList.remove('flipped');
+        secondCard.classList.remove('flipped');
+        resetBoard();
+      }, 1000);
+    }
+    
+    // 重置棋盤狀態
+    function resetBoard() {
+      [hasFlippedCard, lockBoard] = [false, false];
+      [firstCard, secondCard] = [null, null];
+    }
+    
+    // 重新開始遊戲
+    function restartGame() {
+      cards.forEach(card => {
+        card.classList.remove('flipped', 'matched');
+        card.addEventListener('click', flipCard);
+      });
+      moves = 0;
+      matches = 0;
+      scoreElement.textContent = `已翻牌次數: ${moves}`;
+      resetBoard();
+      shuffle();
+    }
+    
+    // 初始化
+    restartButton.addEventListener('click', restartGame);
+    cards.forEach(card => card.addEventListener('click', flipCard));
+    shuffle();
+  }
+  
+  // 猜數字遊戲
+  function initGuessGame() {
+    const input = document.getElementById('guess-input');
+    const submitButton = document.getElementById('guess-submit');
+    const feedbackElement = document.getElementById('guess-feedback');
+    const attemptsElement = document.getElementById('guess-attempts');
+    const restartButton = document.getElementById('guess-restart');
+    let targetNumber;
+    let attempts;
+    
+    // 產生隨機目標數字
+    function generateNumber() {
+      return Math.floor(Math.random() * 100) + 1;
+    }
+    
+    // 重置遊戲
+    function resetGame() {
+      targetNumber = generateNumber();
+      attempts = 0;
+      attemptsElement.textContent = `已猜次數: ${attempts}`;
+      feedbackElement.textContent = '';
+      feedbackElement.className = '';
+      input.value = '';
+      input.disabled = false;
+      submitButton.disabled = false;
+    }
+    
+    // 檢查猜測
+    function checkGuess() {
+      const userGuess = parseInt(input.value);
+      
+      if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+        feedbackElement.textContent = '請輸入1到100之間的數字！';
+        return;
+      }
+      
+      attempts++;
+      attemptsElement.textContent = `已猜次數: ${attempts}`;
+      
+      if (userGuess === targetNumber) {
+        feedbackElement.textContent = `恭喜！你猜對了，答案就是 ${targetNumber}！`;
+        feedbackElement.className = 'correct';
+        input.disabled = true;
+        submitButton.disabled = true;
+      } else if (userGuess > targetNumber) {
+        feedbackElement.textContent = '太高了，再試一次！';
+        feedbackElement.className = 'too-high';
+      } else {
+        feedbackElement.textContent = '太低了，再試一次！';
+        feedbackElement.className = 'too-low';
+      }
+      
+      input.value = '';
+      input.focus();
+    }
+    
+    // 事件監聽
+    submitButton.addEventListener('click', checkGuess);
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkGuess();
+      }
+    });
+    restartButton.addEventListener('click', resetGame);
+    
+    // 初始化
+    resetGame();
+  }
+  
+  // 遊戲選擇功能
+  window.addEventListener('DOMContentLoaded', function() {
+    const memoryButton = document.getElementById('memory-btn');
+    const guessButton = document.getElementById('guess-btn');
+    const gameContainer = document.getElementById('game-container');
+    const memoryGame = document.getElementById('memory-game');
+    const guessGame = document.getElementById('guess-game');
+    
+    memoryButton.addEventListener('click', function() {
+      gameContainer.style.display = 'block';
+      memoryGame.style.display = 'block';
+      guessGame.style.display = 'none';
+      initMemoryGame();
+    });
+    
+    guessButton.addEventListener('click', function() {
+      gameContainer.style.display = 'block';
+      memoryGame.style.display = 'none';
+      guessGame.style.display = 'block';
+      initGuessGame();
+    });
+  });
+</script>
       );
     };
-
+  
     ReactDOM.render(<RecoveryCalendar />, document.getElementById('root'));
   </script>
 </body>
