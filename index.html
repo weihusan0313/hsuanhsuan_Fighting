@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>璇璇的手術恢復日記</title>
@@ -157,6 +159,30 @@
       color: green;
       font-size: 12px;
     }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      font-size: 18px;
+      color: #1877f2;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #1877f2;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -165,16 +191,23 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
+    // 初始化Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDx3EXeSy6vrY9m_AArANRgsiyWzp2rX6s",
+      authDomain: "recoverydiary-hsuan.firebaseapp.com",
+      databaseURL: "https://recoverydiary-hsuan-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "recoverydiary-hsuan",
+      storageBucket: "recoverydiary-hsuan.firebasestorage.app",
+      messagingSenderId: "663297223671",
+      appId: "1:663297223671:web:02956411967c5ad368dcf2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
     const RecoveryCalendar = () => {
-      const [surgeryDate, setSurgeryDate] = useState(() => {
-        const storedDate = localStorage.getItem('surgeryDate');
-        return storedDate || new Date().toISOString().split('T')[0];
-      });
-      
-      const [recoveryDays, setRecoveryDays] = useState(() => {
-        const storedDays = localStorage.getItem('recoveryDays');
-        return storedDays ? parseInt(storedDays) : 14;
-      });
+      const [surgeryDate, setSurgeryDate] = useState(new Date().toISOString().split('T')[0]);
+      const [recoveryDays, setRecoveryDays] = useState(14);
+      const [loading, setLoading] = useState(true);
 
       const defaultMilestones = [
         { day: 1, title: "手術第1天", description: "頭暈、沒食慾、不能下床", isDefault: true },
@@ -184,14 +217,7 @@
         { day: 14, title: "術後第14天", description: "差不多快好囉!!!", isDefault: true }
       ];
       
-      const [milestones, setMilestones] = useState(() => {
-        const storedMilestones = localStorage.getItem('milestones');
-        if (storedMilestones) {
-          return JSON.parse(storedMilestones);
-        }
-        return defaultMilestones;
-      });
-      
+      const [milestones, setMilestones] = useState(defaultMilestones);
       const [customMilestone, setCustomMilestone] = useState({ day: "", title: "", description: "" });
       const [currentDay, setCurrentDay] = useState(0);
       const [messages, setMessages] = useState([
@@ -207,13 +233,87 @@
         "一小步一小步，終點就在不遠處!"
       ]);
 
-      // 保存到 localStorage
+      // 從Firebase讀取數據
       useEffect(() => {
-        localStorage.setItem('surgeryDate', surgeryDate);
-        localStorage.setItem('recoveryDays', recoveryDays);
-        localStorage.setItem('milestones', JSON.stringify(milestones));
-      }, [surgeryDate, recoveryDays, milestones]);
+        const calendarRef = database.ref('calendar');
+        
+        calendarRef.on('value', (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            setSurgeryDate(data.surgeryDate || new Date().toISOString().split('T')[0]);
+            setRecoveryDays(data.recoveryDays || 14);
+            setMilestones(data.milestones || defaultMilestones);
+          } else {
+            // 如果尚未有數據，初始化數據
+            calendarRef.set({
+              surgeryDate: new Date().toISOString().split('T')[0],
+              recoveryDays: 14,
+              milestones: defaultMilestones
+            });
+          }
+          setLoading(false);
+        });
+        
+        return () => {
+          calendarRef.off(); // 組件卸載時取消訂閱
+        };
+      }, []);
 
+      // 更新Firebase數據
+      const updateFirebase = () => {
+        database.ref('calendar').set({
+          surgeryDate,
+          recoveryDays,
+          milestones
+        });
+      };
+
+      // 處理手術日期變更
+      const handleSurgeryDateChange = (e) => {
+        const newDate = e.target.value;
+        setSurgeryDate(newDate);
+        setTimeout(() => {
+          updateFirebase();
+        }, 100);
+      };
+
+      // 處理恢復天數變更
+      const handleRecoveryDaysChange = (e) => {
+        const days = parseInt(e.target.value);
+        setRecoveryDays(days);
+        setTimeout(() => {
+          updateFirebase();
+        }, 100);
+      };
+
+      // 添加里程碑
+      const handleAddMilestone = () => {
+        if (customMilestone.day && customMilestone.title) {
+          const newMilestones = [...milestones, { 
+            day: parseInt(customMilestone.day), 
+            title: customMilestone.title, 
+            description: customMilestone.description,
+            isDefault: false
+          }];
+          setMilestones(newMilestones);
+          setCustomMilestone({ day: "", title: "", description: "" });
+          setTimeout(() => {
+            database.ref('calendar/milestones').set(newMilestones);
+          }, 100);
+        }
+      };
+
+      // 刪除里程碑
+      const handleDeleteMilestone = (index) => {
+        const updatedMilestones = [...milestones];
+        updatedMilestones.splice(index, 1);
+        setMilestones(updatedMilestones);
+        setTimeout(() => {
+          database.ref('calendar/milestones').set(updatedMilestones);
+        }, 100);
+      };
+
+      // 計算當前天數
       useEffect(() => {
         const calculateCurrentDay = () => {
           const surgery = new Date(surgeryDate);
@@ -229,30 +329,21 @@
         return () => clearInterval(timer);
       }, [surgeryDate]);
 
-      const handleAddMilestone = () => {
-        if (customMilestone.day && customMilestone.title) {
-          setMilestones([...milestones, { 
-            day: parseInt(customMilestone.day), 
-            title: customMilestone.title, 
-            description: customMilestone.description,
-            isDefault: false
-          }]);
-          setCustomMilestone({ day: "", title: "", description: "" });
-        }
-      };
-
-      const handleDeleteMilestone = (index) => {
-        const updatedMilestones = [...milestones];
-        updatedMilestones.splice(index, 1);
-        setMilestones(updatedMilestones);
-      };
-
       const getRandomMessage = () => {
         const randomIndex = Math.floor(Math.random() * messages.length);
         return messages[randomIndex];
       };
 
       const recoveryPercentage = Math.min(100, Math.round((currentDay / recoveryDays) * 100));
+
+      if (loading) {
+        return (
+          <div className="loading">
+            <div className="spinner"></div>
+            <span>數據加載中...</span>
+          </div>
+        );
+      }
 
       return (
         <div className="calendar-container">
@@ -264,7 +355,7 @@
               <input 
                 type="date" 
                 value={surgeryDate} 
-                onChange={(e) => setSurgeryDate(e.target.value)}
+                onChange={handleSurgeryDateChange}
               />
             </div>
             
@@ -273,7 +364,7 @@
               <input 
                 type="number" 
                 value={recoveryDays} 
-                onChange={(e) => setRecoveryDays(parseInt(e.target.value))}
+                onChange={handleRecoveryDaysChange}
                 min="1"
               />
             </div>
@@ -306,35 +397,35 @@
           <div className="section">
             <h2>恢復里程碑</h2>
             
-          {milestones
-            .sort((a, b) => a.day - b.day)
-            .map((milestone, index) => {
-              const isCompleted = currentDay >= milestone.day;
-              const milestoneClass = milestone.isDefault ? 
-                (isCompleted ? 'milestone completed' : 'milestone pending') : 
-                (isCompleted ? 'milestone custom-milestone completed' : 'milestone custom-milestone');
-              
-              return (
-                <div key={index} className={milestoneClass}>
-                  <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                    <span style={{fontWeight: 'bold'}}>第 {milestone.day} 天</span>
+            {milestones
+              .sort((a, b) => a.day - b.day)
+              .map((milestone, index) => {
+                const isCompleted = currentDay >= milestone.day;
+                const milestoneClass = milestone.isDefault ? 
+                  (isCompleted ? 'milestone completed' : 'milestone pending') : 
+                  (isCompleted ? 'milestone custom-milestone completed' : 'milestone custom-milestone');
+                
+                return (
+                  <div key={index} className={milestoneClass}>
+                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                      <span style={{fontWeight: 'bold'}}>第 {milestone.day} 天</span>
+                    </div>
+                    <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
+                    <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
+                    
+                    <button 
+                      className="delete-btn" 
+                      onClick={() => handleDeleteMilestone(index)}
+                      title="刪除此里程碑"
+                    >
+                      ×
+                    </button>
+                    {isCompleted && (
+                      <span className="completed-mark">✓ 已達成</span>
+                    )}
                   </div>
-                  <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
-                  <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
-                  
-                  <button 
-                    className="delete-btn" 
-                    onClick={() => handleDeleteMilestone(index)}
-                    title="刪除此里程碑"
-                  >
-                    ×
-                  </button>
-                  {isCompleted && (
-                    <span className="completed-mark">✓ 已達成</span>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
           
           <div className="section">
