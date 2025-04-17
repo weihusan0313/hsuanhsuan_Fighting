@@ -123,6 +123,27 @@
     .guess-feedback.too-low {
       color: #ff9800;
     }
+    
+    .best-record {
+      background-color: #FFF9C4;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+      color: #FF6F00;
+      border: 1px dashed #FFA000;
+    }
+    
+    .new-record {
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { background-color: #FFF9C4; }
+      50% { background-color: #FFECB3; }
+      100% { background-color: #FFF9C4; }
+    }
   </style>
 </head>
 <body>
@@ -138,10 +159,20 @@
       const [flippedCards, setFlippedCards] = useState([]);
       const [matchedCards, setMatchedCards] = useState([]);
       const [cards, setCards] = useState([]);
+      const [bestRecord, setBestRecord] = useState(null);
+      const [isNewRecord, setIsNewRecord] = useState(false);
       const lockBoardRef = useRef(false);
       
       // 表情符號
       const emojis = ['😊', '🌟', '🎉', '🍎', '🐱', '🌈'];
+      
+      // 加載最佳紀錄
+      useEffect(() => {
+        const savedRecord = localStorage.getItem('memoryGameBestRecord');
+        if (savedRecord) {
+          setBestRecord(parseInt(savedRecord));
+        }
+      }, []);
       
       // 初始化卡片
       useEffect(() => {
@@ -169,6 +200,7 @@
         setMatches(0);
         setFlippedCards([]);
         setMatchedCards([]);
+        setIsNewRecord(false);
       };
       
       const handleCardClick = (index) => {
@@ -211,9 +243,21 @@
             setMatches(newMatches);
             
             if (newMatches === 6) {
-              setTimeout(() => {
-                alert(`恭喜您完成了記憶配對遊戲！總共翻牌 ${moves + 1} 次。`);
-              }, 500);
+              const finalMoves = moves + 1;
+              
+              // 檢查是否是新紀錄
+              if (!bestRecord || finalMoves < bestRecord) {
+                setBestRecord(finalMoves);
+                localStorage.setItem('memoryGameBestRecord', finalMoves.toString());
+                setIsNewRecord(true);
+                setTimeout(() => {
+                  alert(`恭喜！新紀錄！你用 ${finalMoves} 次翻牌完成了遊戲！`);
+                }, 500);
+              } else {
+                setTimeout(() => {
+                  alert(`恭喜您完成了記憶配對遊戲！總共翻牌 ${finalMoves} 次。\n最佳紀錄: ${bestRecord} 次`);
+                }, 500);
+              }
             }
           } else {
             // 配對失敗
@@ -246,7 +290,14 @@
             ))}
           </div>
           <p style={{textAlign: 'center', fontWeight: 'bold'}}>已翻牌次數: {moves}</p>
-          <button onClick={initGame}>重新開始</button>
+          
+          {bestRecord && (
+            <div className={`best-record ${isNewRecord ? 'new-record' : ''}`}>
+              {isNewRecord ? '🎊 新紀錄！🎊' : '最佳紀錄'}：{bestRecord} 次翻牌
+            </div>
+          )}
+          
+          <button onClick={initGame} style={{marginTop: '15px'}}>重新開始</button>
         </div>
       );
     };
@@ -259,6 +310,16 @@
       const [feedback, setFeedback] = useState('');
       const [feedbackClass, setFeedbackClass] = useState('');
       const [gameOver, setGameOver] = useState(false);
+      const [bestRecord, setBestRecord] = useState(null);
+      const [isNewRecord, setIsNewRecord] = useState(false);
+      
+      // 加載最佳紀錄
+      useEffect(() => {
+        const savedRecord = localStorage.getItem('guessGameBestRecord');
+        if (savedRecord) {
+          setBestRecord(parseInt(savedRecord));
+        }
+      }, []);
       
       // 初始化遊戲
       useEffect(() => {
@@ -272,6 +333,7 @@
         setFeedback('');
         setFeedbackClass('');
         setGameOver(false);
+        setIsNewRecord(false);
       };
       
       const handleGuess = () => {
@@ -282,12 +344,23 @@
           return;
         }
         
-        setAttempts(attempts + 1);
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
         
         if (userGuess === targetNumber) {
           setFeedback(`恭喜！你猜對了，答案就是 ${targetNumber}！`);
           setFeedbackClass('correct');
           setGameOver(true);
+          
+          // 檢查是否是新紀錄
+          if (!bestRecord || newAttempts < bestRecord) {
+            setBestRecord(newAttempts);
+            localStorage.setItem('guessGameBestRecord', newAttempts.toString());
+            setIsNewRecord(true);
+            setTimeout(() => {
+              alert(`恭喜！新紀錄！你用 ${newAttempts} 次猜中了數字！`);
+            }, 500);
+          }
         } else if (userGuess > targetNumber) {
           setFeedback('太高了，再試一次！');
           setFeedbackClass('too-high');
@@ -326,7 +399,14 @@
             {feedback}
           </p>
           <p style={{textAlign: 'center', fontWeight: 'bold'}}>已猜次數: {attempts}</p>
-          <button onClick={resetGame}>重新開始</button>
+          
+          {bestRecord && (
+            <div className={`best-record ${isNewRecord ? 'new-record' : ''}`}>
+              {isNewRecord ? '🎊 新紀錄！🎊' : '最佳紀錄'}：{bestRecord} 次猜中
+            </div>
+          )}
+          
+          <button onClick={resetGame} style={{marginTop: '15px'}}>重新開始</button>
         </div>
       );
     };
@@ -368,12 +448,11 @@
             )}
           </div>
           
-          <button 
-            className="home-btn" 
-            onClick={() => window.location.href = 'index.html'}
-          >
-            返回恢復日曆
-          </button>
+          <a href="index.html" style={{textDecoration: 'none'}}>
+            <button className="home-btn">
+              返回恢復日曆
+            </button>
+          </a>
         </div>
       );
     };
