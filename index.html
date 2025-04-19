@@ -243,6 +243,8 @@
       const [surgeryDate, setSurgeryDate] = useState(new Date().toISOString().split('T')[0]);
       const [recoveryDays, setRecoveryDays] = useState(14);
       const [loading, setLoading] = useState(true);
+      const [editingIndex, setEditingIndex] = useState(null);
+      const [editMilestone, setEditMilestone] = useState({ day: "", title: "", description: "" });
 
       const defaultMilestones = [
         { day: 1, title: "手術第1天", description: "頭暈、沒食慾、不能下床", isDefault: true },
@@ -591,7 +593,6 @@
             </button>
           </div>
         </div>
-      
       );
     };
 
