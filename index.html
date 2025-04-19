@@ -98,6 +98,32 @@
       opacity: 1;
       background-color: #ff7875;
     }
+
+    .edit-btn {
+      position: absolute;
+      top: 10px;
+      right: 40px;
+      background-color: #1890ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      padding: 0;
+    }
+    
+    .edit-btn:hover {
+      opacity: 1;
+      background-color: #40a9ff;
+    }
     
     .form-control {
       margin-bottom: 12px;
@@ -130,6 +156,15 @@
     
     button:hover {
       background-color: #166fe5;
+    }
+    
+    .save-btn {
+      background-color: #52c41a;
+      margin-top: 10px;
+    }
+    
+    .save-btn:hover {
+      background-color: #73d13d;
     }
     
     .message-box {
@@ -313,6 +348,35 @@
         }, 100);
       };
 
+      // 開始編輯里程碑
+      const handleEditMilestone = (index) => {
+        setEditingIndex(index);
+        setEditMilestone({
+          day: milestones[index].day.toString(),
+          title: milestones[index].title,
+          description: milestones[index].description
+        });
+      };
+
+      // 保存編輯的里程碑
+      const handleSaveMilestone = () => {
+        if (editMilestone.day && editMilestone.title) {
+          const updatedMilestones = [...milestones];
+          updatedMilestones[editingIndex] = {
+            ...updatedMilestones[editingIndex],
+            day: parseInt(editMilestone.day),
+            title: editMilestone.title,
+            description: editMilestone.description
+          };
+          setMilestones(updatedMilestones);
+          setEditingIndex(null);
+          setEditMilestone({ day: "", title: "", description: "" });
+          setTimeout(() => {
+            database.ref('calendar/milestones').set(updatedMilestones);
+          }, 100);
+        }
+      };
+      
       // 計算當前天數
       useEffect(() => {
         const calculateCurrentDay = () => {
@@ -404,7 +468,46 @@
                 const milestoneClass = milestone.isDefault ? 
                   (isCompleted ? 'milestone completed' : 'milestone pending') : 
                   (isCompleted ? 'milestone custom-milestone completed' : 'milestone custom-milestone');
+                // 如果正在編輯這個里程碑，顯示編輯表單
+                if (editingIndex === index) {
+                  return (
+                    <div key={index} className={milestoneClass}>
+                      <div className="form-control">
+                        <label>第幾天：</label>
+                        <input 
+                          type="number" 
+                          value={editMilestone.day} 
+                          onChange={(e) => setEditMilestone({...editMilestone, day: e.target.value})}
+                          min="1"
+                        />
+                      </div>
+                      <div className="form-control">
+                        <label>標題：</label>
+                        <input 
+                          type="text" 
+                          value={editMilestone.title} 
+                          onChange={(e) => setEditMilestone({...editMilestone, title: e.target.value})}
+                        />
+                      </div>
+                      <div className="form-control">
+                        <label>描述：</label>
+                        <input 
+                          type="text" 
+                          value={editMilestone.description} 
+                          onChange={(e) => setEditMilestone({...editMilestone, description: e.target.value})}
+                        />
+                      </div>
+                      <button 
+                        className="save-btn" 
+                        onClick={handleSaveMilestone}
+                      >
+                        保存
+                      </button>
+                    </div>
+                  );
+                }
                 
+                // 正常顯示里程碑
                 return (
                   <div key={index} className={milestoneClass}>
                     <div style={{display: 'flex', justifyContent: 'space-between'}}>
@@ -412,6 +515,14 @@
                     </div>
                     <p style={{margin: '5px 0', fontWeight: '500'}}>{milestone.title}</p>
                     <p style={{margin: '5px 0', fontSize: '14px', color: '#666'}}>{milestone.description}</p>
+                    
+                    <button 
+                      className="edit-btn" 
+                      onClick={() => handleEditMilestone(index)}
+                      title="編輯此里程碑"
+                    >
+                      ✎
+                    </button>
                     
                     <button 
                       className="delete-btn" 
